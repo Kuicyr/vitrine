@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       ipa_url:
-        description: 'Link bezpośredni do zdekryptowanego pliku Spotify .ipa'
+        description: 'Link do zdekryptowanego pliku Spotify .ipa'
         required: true
         type: string
 
@@ -17,18 +17,21 @@ jobs:
 
       - name: Setup Theos
         run: |
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
-          echo "THEOS=~/theos" >> $GITHUB_ENV
+          echo "THEOS=$GITHUB_WORKSPACE/theos" >> $GITHUB_ENV
+          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos
+          curl -LO https://github.com/theos/sdks/archive/master.zip
+          unzip master.zip
+          mv sdks-master/*.sdk $GITHUB_WORKSPACE/theos/sdks
+          rm -r master.zip sdks-master
 
       - name: Download Spotify IPA
         run: |
-          curl -L "${{ github.event.inputs.ipa_url }}" -o app.ipa
-          # Upewnij się, że nazwa pobranego pliku zgadza się z oczekiwaniami Makefile (często 'app.ipa' lub 'spotify.ipa')
+          pip3 install gdown
+          gdown "${{ github.event.inputs.ipa_url }}" -O app.ipa
 
       - name: Build Tweak and Inject
         run: |
           make package FINALPACKAGE=1
-          # Jeśli repozytorium posiada dedykowany skrypt budujący, zamień to na: make release
 
       - name: Upload Modded IPA
         uses: actions/upload-artifact@v4
