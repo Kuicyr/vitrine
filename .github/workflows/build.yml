@@ -26,7 +26,7 @@ jobs:
 
       - name: Download Spotify IPA
         run: |
-          pip3 install gdown
+          pip3 install gdown --break-system-packages
           gdown "${{ github.event.inputs.ipa_url }}" -O app.ipa
 
       - name: Build Tweak and Inject
