@@ -1,0 +1,37 @@
+name: Build Vitrine IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: 'Link bezpośredni do zdekryptowanego pliku Spotify .ipa'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Theos
+        run: |
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          echo "THEOS=~/theos" >> $GITHUB_ENV
+
+      - name: Download Spotify IPA
+        run: |
+          curl -L "${{ github.event.inputs.ipa_url }}" -o app.ipa
+          # Upewnij się, że nazwa pobranego pliku zgadza się z oczekiwaniami Makefile (często 'app.ipa' lub 'spotify.ipa')
+
+      - name: Build Tweak and Inject
+        run: |
+          make package FINALPACKAGE=1
+          # Jeśli repozytorium posiada dedykowany skrypt budujący, zamień to na: make release
+
+      - name: Upload Modded IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vitrine-Spotify-iOS
+          path: packages/*.ipa
