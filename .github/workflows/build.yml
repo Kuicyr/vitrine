@@ -31,6 +31,8 @@ jobs:
 
       - name: Build Tweak and Inject
         run: |
+          mkdir -p ipa
+          mv app.ipa ipa/
           make release
 
       - name: Upload Modded IPA
