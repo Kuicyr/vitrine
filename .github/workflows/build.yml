@@ -31,7 +31,7 @@ jobs:
 
       - name: Build Tweak and Inject
         run: |
-          brew install make
+          brew install make ldid
           mkdir -p ipa
           mv app.ipa ipa/
           make release
