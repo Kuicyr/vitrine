@@ -15,6 +15,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install System Dependencies
+        run: |
+          brew install make ldid dpkg fakeroot xz coreutils zstd
+
       - name: Setup Theos
         run: |
           echo "THEOS=$GITHUB_WORKSPACE/theos" >> $GITHUB_ENV
@@ -31,13 +35,22 @@ jobs:
 
       - name: Build Tweak and Inject
         run: |
-          brew install make ldid
+          # Przeniesienie czystego IPA do wymaganego folderu
           mkdir -p ipa
           mv app.ipa ipa/
+          
+          # Wymuszenie użycia GNU Make zamiast domyślnego Make z macOS
+          export PATH="/opt/homebrew/opt/make/libexec/gnubin:$PATH"
+          
+          # Właściwa kompilacja i wstrzyknięcie
           make release
 
       - name: Upload Modded IPA
         uses: actions/upload-artifact@v4
         with:
           name: Vitrine-Spotify-iOS
-          path: packages/*.ipa
+          path: |
+            packages/*.ipa
+            out/*.ipa
+            *.ipa
+            !ipa/app.ipa
