@@ -10,28 +10,23 @@ on:
 
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Theos
+        uses: theos/setup-theos@main
+
       - name: Install System Dependencies
         run: |
-          brew install make ldid dpkg fakeroot xz coreutils zstd uv
+          sudo apt-get update
+          sudo apt-get install -y dpkg fakeroot coreutils unzip zip
+          pip3 install gdown uv --break-system-packages
           uv tool install 'cyan @ git+https://github.com/asdfzxcvbn/pyzule-rw'
-
-      - name: Setup Theos
-        run: |
-          echo "THEOS=$GITHUB_WORKSPACE/theos" >> $GITHUB_ENV
-          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos
-          curl -LO https://github.com/theos/sdks/archive/master.zip
-          unzip master.zip
-          mv sdks-master/*.sdk $GITHUB_WORKSPACE/theos/sdks
-          rm -r master.zip sdks-master
 
       - name: Download Spotify IPA
         run: |
-          pip3 install gdown --break-system-packages
           gdown "${{ github.event.inputs.ipa_url }}" -O app.ipa
 
       - name: Build Tweak and Inject
@@ -39,8 +34,7 @@ jobs:
           mkdir -p ipa
           mv app.ipa ipa/
           
-          # Ścieżki dostosowane do architektury Intel (macos-13)
-          export PATH="/usr/local/opt/make/libexec/gnubin:$HOME/.local/bin:$PATH"
+          export PATH="$HOME/.local/bin:$PATH"
           
           make release
 
