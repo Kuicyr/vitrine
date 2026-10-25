@@ -10,23 +10,28 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Theos
-        uses: theos/setup-theos@main
-
       - name: Install System Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y dpkg fakeroot coreutils unzip zip
-          pip3 install gdown uv --break-system-packages
+          brew install make ldid dpkg xz coreutils zstd uv
           uv tool install 'cyan @ git+https://github.com/asdfzxcvbn/pyzule-rw'
+
+      - name: Setup Theos
+        run: |
+          echo "THEOS=$GITHUB_WORKSPACE/theos" >> $GITHUB_ENV
+          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos
+          curl -LO https://github.com/theos/sdks/archive/master.zip
+          unzip master.zip
+          mv sdks-master/*.sdk $GITHUB_WORKSPACE/theos/sdks
+          rm -r master.zip sdks-master
 
       - name: Download Spotify IPA
         run: |
+          pip3 install gdown --break-system-packages
           gdown "${{ github.event.inputs.ipa_url }}" -O app.ipa
 
       - name: Build Tweak and Inject
@@ -34,8 +39,18 @@ jobs:
           mkdir -p ipa
           mv app.ipa ipa/
           
-          export PATH="$HOME/.local/bin:$PATH"
+          # Utworzenie "fałszywego" fakeroota, aby ominąć błąd na procesorach M1/M2
+          mkdir -p $HOME/mock-bin
+          cat << 'EOF' > $HOME/mock-bin/fakeroot
+          #!/bin/bash
+          "$@"
+          EOF
+          chmod +x $HOME/mock-bin/fakeroot
           
+          # Dodanie naszego fakeroota na pierwsze miejsce, oraz narzędzi cyan i GNU make
+          export PATH="$HOME/mock-bin:/opt/homebrew/opt/make/libexec/gnubin:$HOME/.local/bin:$PATH"
+          
+          # Właściwa kompilacja
           make release
 
       - name: Upload Modded IPA
