@@ -17,7 +17,8 @@ jobs:
 
       - name: Install System Dependencies
         run: |
-          brew install make ldid dpkg fakeroot xz coreutils zstd
+          brew install make ldid dpkg fakeroot xz coreutils zstd uv
+          uv tool install 'cyan @ git+https://github.com/asdfzxcvbn/pyzule-rw'
 
       - name: Setup Theos
         run: |
@@ -39,8 +40,8 @@ jobs:
           mkdir -p ipa
           mv app.ipa ipa/
           
-          # Wymuszenie użycia GNU Make zamiast domyślnego Make z macOS
-          export PATH="/opt/homebrew/opt/make/libexec/gnubin:$PATH"
+          # Wymuszenie użycia GNU Make oraz dodanie narzędzia cyan do PATH
+          export PATH="/opt/homebrew/opt/make/libexec/gnubin:$HOME/.local/bin:$PATH"
           
           # Właściwa kompilacja i wstrzyknięcie
           make release
