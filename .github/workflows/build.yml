@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,14 +36,12 @@ jobs:
 
       - name: Build Tweak and Inject
         run: |
-          # Przeniesienie czystego IPA do wymaganego folderu
           mkdir -p ipa
           mv app.ipa ipa/
           
-          # Wymuszenie użycia GNU Make oraz dodanie narzędzia cyan do PATH
-          export PATH="/opt/homebrew/opt/make/libexec/gnubin:$HOME/.local/bin:$PATH"
+          # Ścieżki dostosowane do architektury Intel (macos-13)
+          export PATH="/usr/local/opt/make/libexec/gnubin:$HOME/.local/bin:$PATH"
           
-          # Właściwa kompilacja i wstrzyknięcie
           make release
 
       - name: Upload Modded IPA
