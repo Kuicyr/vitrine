@@ -29,6 +29,30 @@ jobs:
           mv sdks-master/*.sdk $GITHUB_WORKSPACE/theos/sdks
           rm -r master.zip sdks-master
 
+      - name: Setup Mock Fakeroot
+        run: |
+          mkdir -p $HOME/mock-bin
+          cat << 'EOF' > $HOME/mock-bin/fakeroot
+          #!/bin/bash
+          # Pętla usuwająca flagi własne fakeroota (-i, -s, -f) i ich wartości
+          while [[ $# -gt 0 && "$1" == -* ]]; do
+              if [[ "$1" == "-i" || "$1" == "-s" || "$1" == "-f" ]]; then
+                  shift 2
+              else
+                  shift 1
+              fi
+          done
+          
+          # Ignorowanie poleceń zmiany właściciela, by uniknąć błędów uprawnień
+          if [[ "$1" == "chown" || "$1" == "chgrp" ]]; then
+              exit 0
+          fi
+          
+          # Wykonanie właściwego polecenia pakującego (np. dpkg-deb)
+          exec "$@"
+          EOF
+          chmod +x $HOME/mock-bin/fakeroot
+
       - name: Download Spotify IPA
         run: |
           pip3 install gdown --break-system-packages
@@ -39,18 +63,10 @@ jobs:
           mkdir -p ipa
           mv app.ipa ipa/
           
-          # Utworzenie "fałszywego" fakeroota, aby ominąć błąd na procesorach M1/M2
-          mkdir -p $HOME/mock-bin
-          cat << 'EOF' > $HOME/mock-bin/fakeroot
-          #!/bin/bash
-          "$@"
-          EOF
-          chmod +x $HOME/mock-bin/fakeroot
-          
-          # Dodanie naszego fakeroota na pierwsze miejsce, oraz narzędzi cyan i GNU make
+          # Dodanie naszego fakeroota na pierwsze miejsce w zmiennej PATH
           export PATH="$HOME/mock-bin:/opt/homebrew/opt/make/libexec/gnubin:$HOME/.local/bin:$PATH"
           
-          # Właściwa kompilacja
+          # Właściwa kompilacja i pakowanie
           make release
 
       - name: Upload Modded IPA
